@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { TourRequestSchema, TourSchema } from "@/lib/schema";
+import { TourRequestSchema, TourSchema, DiagramGraph } from "@/lib/schema";
+import { discoverRepo } from "@/lib/github";
+import { getVisionLLM } from "@/lib/llm";
 import { planTour } from "@/lib/narration";
 import { synthesizeSpeech } from "@/lib/elevenlabs";
 import { saveToStorage, getFromStorage } from "@/lib/storage";
@@ -18,29 +20,99 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const repoId = parsed.data.repoId;
-    const tour = planTour(repoId, [architectureFixture as any, erFixture as any]);
+    const { repoId } = parsed.data;
+    const isMock = process.env.USE_MOCKS === "true" || !process.env.GEMMA_API_KEY;
 
-    const isMock = process.env.USE_MOCKS === "true" || !process.env.ELEVENLABS_API_KEY;
+    // 1. Discover diagrams in repo
+    const discovery = await discoverRepo(repoId);
+    const diagrams: DiagramGraph[] = [];
+    const vision = getVisionLLM();
+
+    // 2. Analyze diagrams (with content-hashed cache)
+    for (const d of discovery.diagrams) {
+      try {
+        let imageBuffer = Buffer.from("");
+        let mime = "image/png";
+
+        // Attempt fetching image bytes if rawUrl provided
+        if (d.rawUrl && !isMock) {
+          try {
+            const imgRes = await fetch(d.rawUrl);
+            if (imgRes.ok) {
+              const ab = await imgRes.arrayBuffer();
+              imageBuffer = Buffer.from(ab);
+              const ct = imgRes.headers.get("content-type");
+              if (ct) mime = ct;
+            }
+          } catch {
+            // Fetch failed, use mock/hint fallback
+          }
+        }
+
+        const imageHash = imageBuffer.length > 0 ? sha256(imageBuffer) : sha256(d.path);
+        const cacheKey = `${imageHash}.json`;
+
+        const cached = await getFromStorage(cacheKey, "graphs");
+        if (cached) {
+          diagrams.push(JSON.parse(cached.buffer.toString("utf-8")));
+        } else {
+          const graph = await vision.extractGraph(imageBuffer, mime, d.path);
+          graph.id = imageHash;
+          graph.sourcePath = d.path;
+
+          await saveToStorage(
+            cacheKey,
+            Buffer.from(JSON.stringify(graph, null, 2)),
+            "application/json",
+            "graphs"
+          );
+          diagrams.push(graph);
+        }
+      } catch {
+        // Fallback for this diagram
+      }
+    }
+
+    // If analysis produced no diagrams, fall back to fixtures
+    if (diagrams.length === 0) {
+      diagrams.push(architectureFixture as DiagramGraph);
+      diagrams.push(erFixture as DiagramGraph);
+    }
+
+    // 3. Plan deterministic narration tour
+    const tour = planTour(repoId, diagrams);
     const ext = isMock ? "wav" : "mp3";
 
-    // Prepare audio URLs and pre-warm step 1
+    // 4. Orchestrate audio: synthesize Step 1 first, rest in background
     for (let i = 0; i < tour.steps.length; i++) {
       const step = tour.steps[i];
-      const cacheKey = `${sha256(`${step.voiceKey}:${step.text}`)}.${ext}`;
-      step.audioUrl = `/api/audio/${cacheKey}`;
+      const audioKey = `${sha256(`${step.voiceKey}:${step.text}`)}.${ext}`;
+      step.audioUrl = `/api/audio/${audioKey}`;
 
-      // In mock mode or for step 1, ensure the audio file exists in cache
-      if (isMock || i === 0) {
-        const cached = await getFromStorage(cacheKey);
+      // Step 1 generated immediately
+      if (i === 0 || isMock) {
+        const cached = await getFromStorage(audioKey);
         if (!cached) {
           try {
             const { buffer, contentType } = await synthesizeSpeech(step.text, step.voiceKey);
-            await saveToStorage(cacheKey, buffer, contentType);
-          } catch (e) {
-            // Ignore background error, fallback to runtime /api/narrate
+            await saveToStorage(audioKey, buffer, contentType);
+          } catch {
+            // Audio generation error non-fatal
           }
         }
+      } else {
+        // Background synthesis for subsequent steps
+        (async () => {
+          try {
+            const cached = await getFromStorage(audioKey);
+            if (!cached) {
+              const { buffer, contentType } = await synthesizeSpeech(step.text, step.voiceKey);
+              await saveToStorage(audioKey, buffer, contentType);
+            }
+          } catch {
+            // Ignore async background errors
+          }
+        })();
       }
     }
 
