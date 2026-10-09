@@ -16,6 +16,7 @@ export default function VoiceButton({
   const [browserSupport, setBrowserSupport] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
+  const isHoldingKeyRef = useRef(false);
 
   useEffect(() => {
     // Check Web Speech API support
@@ -35,7 +36,7 @@ export default function VoiceButton({
       };
 
       recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
+        const transcript = event.results[0]?.[0]?.transcript;
         if (transcript) {
           onUtterance(transcript);
         }
@@ -52,7 +53,7 @@ export default function VoiceButton({
       recognitionRef.current = recognition;
     }
 
-    // Keyboard shortcut 'V' to focus input or toggle voice
+    // Keyboard shortcut 'V' to focus input or hold to talk
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (
@@ -63,26 +64,74 @@ export default function VoiceButton({
         return;
       }
 
+      if ((e.key === "v" || e.key === "V") && !isHoldingKeyRef.current) {
+        isHoldingKeyRef.current = true;
+        if (recognitionRef.current) {
+          try {
+            recognitionRef.current.start();
+          } catch {
+            // Already started
+          }
+        } else {
+          e.preventDefault();
+          inputRef.current?.focus();
+        }
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
       if (e.key === "v" || e.key === "V") {
-        e.preventDefault();
-        inputRef.current?.focus();
+        isHoldingKeyRef.current = false;
+        if (recognitionRef.current && isListening) {
+          try {
+            recognitionRef.current.stop();
+          } catch {
+            // Ignore
+          }
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onUtterance]);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [onUtterance, isListening]);
+
+  const startListening = () => {
+    if (!recognitionRef.current) return;
+    try {
+      recognitionRef.current.start();
+    } catch {
+      // Already running
+    }
+  };
+
+  const stopListening = () => {
+    if (!recognitionRef.current) return;
+    try {
+      recognitionRef.current.stop();
+    } catch {
+      // Already stopped
+    }
+  };
 
   const toggleListening = () => {
-    if (!recognitionRef.current) return;
     if (isListening) {
-      recognitionRef.current.stop();
+      stopListening();
     } else {
-      try {
-        recognitionRef.current.start();
-      } catch {
-        // Recognition already active
-      }
+      startListening();
     }
   };
 
@@ -103,7 +152,7 @@ export default function VoiceButton({
           Voice & Query Interface
         </h3>
         <span className="text-xs text-slate-400">
-          Press <kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 font-mono">V</kbd> to focus query
+          Hold <kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 font-mono">V</kbd> for push-to-talk
         </span>
       </div>
 
@@ -130,17 +179,21 @@ export default function VoiceButton({
           </button>
         </form>
 
-        {/* Voice Push-to-Talk button */}
+        {/* Voice Push-to-Talk button with hold and click support */}
         {browserSupport ? (
           <div className="flex items-center space-x-3">
             <button
               type="button"
               onClick={toggleListening}
+              onMouseDown={startListening}
+              onMouseUp={stopListening}
+              onTouchStart={startListening}
+              onTouchEnd={stopListening}
               disabled={disabled}
               aria-label={
                 isListening
-                  ? "Stop listening"
-                  : "Start listening with microphone"
+                  ? "Listening to voice input. Release or click to stop."
+                  : "Push and hold to speak command"
               }
               className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-blue-400 ${
                 isListening
@@ -148,7 +201,7 @@ export default function VoiceButton({
                   : "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
               }`}
             >
-              <span>{isListening ? "🎙️ Listening..." : "🎤 Speak Command"}</span>
+              <span>{isListening ? "🎙️ Listening (Release to stop)..." : "🎤 Push-to-Talk (Hold or Click)"}</span>
             </button>
             <span className="text-xs text-slate-400">
               Web Speech enabled
@@ -156,7 +209,7 @@ export default function VoiceButton({
           </div>
         ) : (
           <p className="text-xs text-slate-400">
-            Web Speech microphone not available in this browser. Use the typed query box above.
+            Microphone input not available in this browser. Use the typed query box above.
           </p>
         )}
       </div>

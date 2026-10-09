@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, use } from "react";
+import React, { useState, useEffect, useCallback, useRef, use } from "react";
 import Link from "next/link";
 import Player from "@/components/Player";
 import Transcript from "@/components/Transcript";
@@ -12,9 +12,11 @@ import {
   TourStep,
   DiagramGraph,
   AgentAnswer,
+  AskResponse,
   GoodFirstIssue,
 } from "@/lib/schema";
 import { planTour } from "@/lib/narration";
+import { fuzzyMatchNodeName } from "@/lib/intent";
 import architectureFixture from "@/fixtures/architecture.json";
 import erFixture from "@/fixtures/er.json";
 
@@ -33,7 +35,7 @@ export default function TourPage({ params }: PageProps) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [agentAnswer, setAgentAnswer] = useState<AgentAnswer | null>(null);
+  const [agentAnswer, setAgentAnswer] = useState<AskResponse | null>(null);
   const [highlightedNodeIds, setHighlightedNodeIds] = useState<string[]>([]);
   const [issues, setIssues] = useState<GoodFirstIssue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -144,12 +146,22 @@ export default function TourPage({ params }: PageProps) {
     setStatusMessage(`Playback speed set to ${speed}x`);
   }, []);
 
+  const answerAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Play audio when agent answers a question
+  useEffect(() => {
+    if (agentAnswer?.audioUrl && answerAudioRef.current) {
+      answerAudioRef.current.src = agentAnswer.audioUrl;
+      answerAudioRef.current.play().catch(() => {});
+    }
+  }, [agentAnswer]);
+
   // Voice/Utterance handler
   const handleUtterance = useCallback(
     async (utterance: string) => {
       setStatusMessage(`Processing query: "${utterance}"...`);
       try {
-        // 1. Send to /api/intent
+        // 1. Send to /api/intent for fast rule-based matching
         const intentRes = await fetch("/api/intent", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -172,6 +184,12 @@ export default function TourPage({ params }: PageProps) {
             setStatusMessage("Navigated to previous step");
             return;
           }
+          if (intent === "repeat") {
+            if (currentStep) {
+              setStatusMessage(`Repeating: ${currentStep.text}`);
+            }
+            return;
+          }
           if (intent === "slower") {
             handleSpeedChange(Math.max(0.75, playbackSpeed - 0.25));
             return;
@@ -192,14 +210,37 @@ export default function TourPage({ params }: PageProps) {
               }
             }
           }
-          if (intent === "drill_down" && target && tour) {
-            const targetLower = target.toLowerCase();
-            const matchedIdx = tour.steps.findIndex((s) =>
-              s.text.toLowerCase().includes(targetLower)
-            );
-            if (matchedIdx !== -1) {
-              setCurrentStepIndex(matchedIdx);
-              setStatusMessage(`Drilled down into ${target}`);
+          if (intent === "drill_down" && tour) {
+            if (target) {
+              const allNodeLabels: string[] = [];
+              const labelToStepIdx = new Map<string, number>();
+
+              tour.diagrams.forEach((d) => {
+                d.nodes.forEach((n) => {
+                  allNodeLabels.push(n.label);
+                  const stepIdx = tour.steps.findIndex(
+                    (s) => s.diagramId === d.id && s.nodeId === n.id
+                  );
+                  if (stepIdx !== -1) {
+                    labelToStepIdx.set(n.label, stepIdx);
+                  }
+                });
+              });
+
+              const fuzzy = fuzzyMatchNodeName(target, allNodeLabels);
+              if (fuzzy.ambiguous && fuzzy.candidates.length >= 2) {
+                setStatusMessage(`Did you mean ${fuzzy.candidates[0]} or ${fuzzy.candidates[1]}?`);
+                return;
+              }
+
+              if (fuzzy.matchedLabel && labelToStepIdx.has(fuzzy.matchedLabel)) {
+                const idx = labelToStepIdx.get(fuzzy.matchedLabel)!;
+                setCurrentStepIndex(idx);
+                setStatusMessage(`Drilled down into ${fuzzy.matchedLabel}`);
+                return;
+              }
+            } else {
+              handleDrillDown();
               return;
             }
           }
@@ -233,6 +274,7 @@ export default function TourPage({ params }: PageProps) {
       repoSlug,
       handleNext,
       handlePrevious,
+      handleDrillDown,
       handleSpeedChange,
     ]
   );
@@ -289,6 +331,13 @@ export default function TourPage({ params }: PageProps) {
       >
         {statusMessage}
       </div>
+
+      {/* Hidden audio element for Q&A spoken response */}
+      <audio
+        ref={answerAudioRef}
+        className="sr-only"
+        aria-label="Spoken Q&A agent response"
+      />
 
       {/* Agent Answer Notification Box (when a question is asked) */}
       {agentAnswer && (

@@ -80,6 +80,7 @@ export class MockQA implements QAAgent {
 }
 
 import { GemmaVision } from "./gemma";
+import { GradientQA } from "./gradient";
 
 /**
  * Factory functions to retrieve LLM providers or mocks.
@@ -92,6 +93,8 @@ export function getVisionLLM(): VisionLLM {
 }
 
 export function getQAAgent(): QAAgent {
-  // During Phase 0/1 (or when USE_MOCKS is set or true), use MockQA
-  return new MockQA();
+  if (process.env.USE_MOCKS !== "true" && process.env.GRADIENT_ACCESS_KEY) {
+    return new GradientQA();
+  }
+  return new GradientQA(); // GradientQA handles mock mode gracefully with graph grounding
 }
