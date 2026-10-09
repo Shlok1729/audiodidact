@@ -79,11 +79,15 @@ export class MockQA implements QAAgent {
   }
 }
 
+import { GemmaVision } from "./gemma";
+
 /**
  * Factory functions to retrieve LLM providers or mocks.
  */
 export function getVisionLLM(): VisionLLM {
-  // During Phase 0/1 (or when USE_MOCKS is set or true), use MockVision
+  if (process.env.USE_MOCKS !== "true" && process.env.GEMMA_API_KEY) {
+    return new GemmaVision();
+  }
   return new MockVision();
 }
 
