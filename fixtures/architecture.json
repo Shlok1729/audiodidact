@@ -1,0 +1,126 @@
+{
+  "id": "arch-hash-101",
+  "sourcePath": "docs/architecture.png",
+  "type": "architecture",
+  "title": "Audiodidact Cloud Platform Architecture",
+  "summary": "The system processes repository architecture diagrams into spoken developer tours. Web clients communicate with an API gateway that routes requests to the diagram analysis pipeline, narration synthesizer, and knowledge base agent. Async tasks are queued through Redis to worker nodes, backed by PostgreSQL and object storage.",
+  "groups": [
+    {
+      "id": "grp-frontend",
+      "label": "Web Client Layer",
+      "layer": "frontend"
+    },
+    {
+      "id": "grp-backend",
+      "label": "Core API & Processing Services",
+      "layer": "backend"
+    },
+    {
+      "id": "grp-data",
+      "label": "Persistence & Storage Cluster",
+      "layer": "data"
+    },
+    {
+      "id": "grp-infra",
+      "label": "Messaging & Asynchronous Queue",
+      "layer": "infra"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "web-ui",
+      "label": "Next.js Web Application",
+      "kind": "client",
+      "groupId": "grp-frontend",
+      "description": "User interface providing the keyboard-accessible tour player, live transcript, and voice interactions."
+    },
+    {
+      "id": "api-gateway",
+      "label": "API Gateway",
+      "kind": "service",
+      "groupId": "grp-backend",
+      "description": "Validates requests, manages rate limits, and routes traffic to internal microservices."
+    },
+    {
+      "id": "vision-service",
+      "label": "Diagram Analysis Service",
+      "kind": "service",
+      "groupId": "grp-backend",
+      "description": "Extracts structured graphs from repository architecture images using multimodal vision models."
+    },
+    {
+      "id": "narration-service",
+      "label": "Narration Planner Service",
+      "kind": "service",
+      "groupId": "grp-backend",
+      "description": "Generates hierarchical tour scripts and dispatches speech synthesis requests."
+    },
+    {
+      "id": "redis-queue",
+      "label": "Redis Task Queue",
+      "kind": "queue",
+      "groupId": "grp-infra",
+      "description": "Buffers background audio generation and heavy image processing tasks."
+    },
+    {
+      "id": "primary-db",
+      "label": "PostgreSQL Database",
+      "kind": "database",
+      "groupId": "grp-data",
+      "description": "Stores user sessions, tour metadata, and extracted diagram graphs."
+    },
+    {
+      "id": "object-storage",
+      "label": "Spaces Object Storage",
+      "kind": "database",
+      "groupId": "grp-data",
+      "description": "Caches source diagram images, generated audio segments, and serialized knowledge files."
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "web-ui",
+      "to": "api-gateway",
+      "label": "HTTPS / REST",
+      "direction": "forward"
+    },
+    {
+      "id": "e2",
+      "from": "api-gateway",
+      "to": "vision-service",
+      "label": "gRPC",
+      "direction": "forward"
+    },
+    {
+      "id": "e3",
+      "from": "api-gateway",
+      "to": "narration-service",
+      "label": "gRPC",
+      "direction": "forward"
+    },
+    {
+      "id": "e4",
+      "from": "narration-service",
+      "to": "redis-queue",
+      "label": "publishes audio jobs",
+      "direction": "forward"
+    },
+    {
+      "id": "e5",
+      "from": "vision-service",
+      "to": "primary-db",
+      "label": "stores graph JSON",
+      "direction": "forward"
+    },
+    {
+      "id": "e6",
+      "from": "narration-service",
+      "to": "object-storage",
+      "label": "reads and writes audio cache",
+      "direction": "bidirectional"
+    }
+  ],
+  "confidence": 0.95,
+  "warnings": []
+}

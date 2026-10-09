@@ -1,0 +1,91 @@
+{
+  "id": "er-hash-202",
+  "sourcePath": "docs/schema_er.png",
+  "type": "er",
+  "title": "Audiodidact Relational Schema",
+  "summary": "The data model organizes repository diagrams, hierarchical tour steps, and user feedback. Repositories own multiple diagrams, diagrams map to structured tour steps, and each tour step tracks speech transcripts and cached audio references.",
+  "groups": [
+    {
+      "id": "grp-core-entities",
+      "label": "Repository & Diagram Model",
+      "layer": "data"
+    },
+    {
+      "id": "grp-tour-entities",
+      "label": "Tour & Narration Model",
+      "layer": "data"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "repositories",
+      "label": "repositories",
+      "kind": "table",
+      "groupId": "grp-core-entities",
+      "description": "Stores indexed GitHub repositories and discovery timestamps.",
+      "details": {
+        "columns": [
+          { "name": "id", "type": "uuid", "key": "PK" },
+          { "name": "owner", "type": "varchar(100)" },
+          { "name": "name", "type": "varchar(100)" },
+          { "name": "default_branch", "type": "varchar(50)" },
+          { "name": "created_at", "type": "timestamp" }
+        ]
+      }
+    },
+    {
+      "id": "diagrams",
+      "label": "diagrams",
+      "kind": "table",
+      "groupId": "grp-core-entities",
+      "description": "Tracks extracted diagrams, image hashes, and model confidence scores.",
+      "details": {
+        "columns": [
+          { "name": "id", "type": "uuid", "key": "PK" },
+          { "name": "repository_id", "type": "uuid", "key": "FK" },
+          { "name": "source_path", "type": "varchar(255)" },
+          { "name": "diagram_type", "type": "varchar(50)" },
+          { "name": "graph_json", "type": "jsonb" },
+          { "name": "confidence", "type": "numeric(3,2)" }
+        ]
+      }
+    },
+    {
+      "id": "tour_steps",
+      "label": "tour_steps",
+      "kind": "table",
+      "groupId": "grp-tour-entities",
+      "description": "Stores individual narration steps, speech transcripts, and audio asset URLs.",
+      "details": {
+        "columns": [
+          { "name": "id", "type": "uuid", "key": "PK" },
+          { "name": "diagram_id", "type": "uuid", "key": "FK" },
+          { "name": "node_id", "type": "varchar(100)" },
+          { "name": "layer", "type": "varchar(50)" },
+          { "name": "voice_key", "type": "varchar(50)" },
+          { "name": "transcript_text", "type": "text" },
+          { "name": "audio_url", "type": "varchar(500)" },
+          { "name": "step_order", "type": "integer" }
+        ]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "fk-repo-diagrams",
+      "from": "repositories",
+      "to": "diagrams",
+      "label": "1..N (repository_id)",
+      "direction": "forward"
+    },
+    {
+      "id": "fk-diagram-steps",
+      "from": "diagrams",
+      "to": "tour_steps",
+      "label": "1..N (diagram_id)",
+      "direction": "forward"
+    }
+  ],
+  "confidence": 0.98,
+  "warnings": []
+}
