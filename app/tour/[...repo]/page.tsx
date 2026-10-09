@@ -353,6 +353,7 @@ export default function TourPage({ params }: PageProps) {
             currentStep={currentStep}
             stepNumber={currentStepIndex + 1}
             totalSteps={tour.steps.length}
+            isPlaying={isPlaying}
           />
 
           <VoiceButton onUtterance={handleUtterance} />

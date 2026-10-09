@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useRef, useState } from "react";
 import { TourStep, DiagramGraph } from "@/lib/schema";
 
 interface PlayerProps {
@@ -36,10 +36,70 @@ export default function Player({
   const currentDiagram = diagrams.find((d) => d.id === currentStep?.diagramId);
   const hasChildren = currentStep && currentStep.children && currentStep.children.length > 0;
 
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [audioError, setAudioError] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  // Synchronize audio playback with isPlaying and currentStep
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !currentStep?.audioUrl) return;
+
+    audio.playbackRate = playbackSpeed;
+
+    if (isPlaying) {
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // Fallback or user gesture requirement handled
+          setAudioError(true);
+        });
+      }
+    } else {
+      audio.pause();
+    }
+  }, [isPlaying, currentStep, playbackSpeed]);
+
+  // When step changes, reset time and continue playback if isPlaying
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.currentTime = 0;
+      setCurrentTime(0);
+      setAudioError(false);
+      if (isPlaying) {
+        audio.play().catch(() => {});
+      }
+    }
+  }, [currentStepIndex, isPlaying]);
+
+  // Update playback speed dynamically
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = playbackSpeed;
+    }
+  }, [playbackSpeed]);
+
+  // Audio event listeners
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+      setDuration(audioRef.current.duration || 0);
+    }
+  };
+
+  const handleAudioEnded = () => {
+    if (currentStepIndex < steps.length - 1) {
+      onNext();
+    } else {
+      onPlayPause(); // pause when tour finishes
+    }
+  };
+
   // Global keyboard shortcuts (Section 15: keyboard-only navigation)
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      // Do not trigger shortcuts if the user is typing in an input or textarea
       const target = e.target as HTMLElement;
       if (
         target.tagName === "INPUT" ||
@@ -103,6 +163,20 @@ export default function Player({
       aria-label="Tour Audio and Step Player"
       className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl"
     >
+      {/* Hidden audio element wired to current step's audioUrl */}
+      {currentStep.audioUrl && (
+        <audio
+          ref={audioRef}
+          src={currentStep.audioUrl}
+          preload="auto"
+          onTimeUpdate={handleTimeUpdate}
+          onEnded={handleAudioEnded}
+          onError={() => setAudioError(true)}
+          className="sr-only"
+          aria-label={`Audio playback for ${currentStep.voiceKey} voice narration`}
+        />
+      )}
+
       {/* Header with Diagram title, Step counter, and Badges */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-4 mb-4">
         <div>
@@ -126,11 +200,14 @@ export default function Player({
 
           {/* Voice Key Badge */}
           <span
-            className={`text-xs font-medium px-2.5 py-1 rounded-full border ${
+            className={`text-xs font-medium px-2.5 py-1 rounded-full border flex items-center space-x-1.5 ${
               voiceBadgeStyles[currentStep.voiceKey] || voiceBadgeStyles.narrator
             }`}
           >
-            Voice: {currentStep.voiceKey}
+            {isPlaying && (
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
+            )}
+            <span>Voice: {currentStep.voiceKey}</span>
           </span>
         </div>
       </div>
@@ -141,9 +218,16 @@ export default function Player({
           <span>
             Step {currentStepIndex + 1} of {steps.length}
           </span>
-          <span>
-            {Math.round(((currentStepIndex + 1) / steps.length) * 100)}% Complete
-          </span>
+          <div className="flex items-center space-x-2">
+            {duration > 0 && (
+              <span className="font-mono text-slate-300">
+                {Math.floor(currentTime)}s / {Math.floor(duration)}s
+              </span>
+            )}
+            <span>
+              {Math.round(((currentStepIndex + 1) / steps.length) * 100)}% Complete
+            </span>
+          </div>
         </div>
         <div
           role="progressbar"
@@ -177,10 +261,10 @@ export default function Player({
           <button
             type="button"
             onClick={onPlayPause}
-            aria-label={isPlaying ? "Pause tour (Shortcut: Space)" : "Play tour (Shortcut: Space)"}
+            aria-label={isPlaying ? "Pause tour audio (Shortcut: Space)" : "Play tour audio (Shortcut: Space)"}
             className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-colors shadow-md shadow-blue-900/30 focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center space-x-2"
           >
-            <span>{isPlaying ? "⏸ Pause" : "▶ Play"}</span>
+            <span>{isPlaying ? "⏸ Pause" : "▶ Play Audio"}</span>
           </button>
 
           <button
@@ -245,11 +329,11 @@ export default function Player({
 
       {/* Keyboard Shortcuts Documentation Help */}
       <div className="mt-3 text-[11px] text-slate-400 bg-slate-950/60 rounded px-2.5 py-1 border border-slate-800/40 flex flex-wrap gap-x-4 gap-y-1">
-        <span><kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300">Space</kbd> Play/Pause</span>
-        <span><kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300">← / [</kbd> Previous</span>
-        <span><kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300">→ / ]</kbd> Next</span>
-        <span><kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300">D</kbd> Drill Down</span>
-        <span><kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300">V</kbd> Voice Query</span>
+        <span><kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 font-mono">Space</kbd> Play/Pause</span>
+        <span><kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 font-mono">← / [</kbd> Previous</span>
+        <span><kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 font-mono">→ / ]</kbd> Next</span>
+        <span><kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 font-mono">D</kbd> Drill Down</span>
+        <span><kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 font-mono">V</kbd> Voice Query</span>
       </div>
     </section>
   );

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { NarrateRequestSchema, NarrateResponseSchema } from "@/lib/schema";
+import { synthesizeSpeech } from "@/lib/elevenlabs";
+import { saveToStorage, getFromStorage } from "@/lib/storage";
+import { sha256 } from "@/lib/hash";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,12 +15,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // In Phase 0/1 mock mode, return an empty audioUrl or placeholder
-    const response = {
-      audioUrl: "",
-    };
+    const { text, voiceKey } = parsed.data;
+    const isMock = process.env.USE_MOCKS === "true" || !process.env.ELEVENLABS_API_KEY;
+    const ext = isMock ? "wav" : "mp3";
+    const cacheKey = `${sha256(`${voiceKey}:${text}`)}.${ext}`;
 
-    const validated = NarrateResponseSchema.parse(response);
+    // Check if audio is already cached
+    const existing = await getFromStorage(cacheKey);
+    let audioUrl = `/api/audio/${cacheKey}`;
+
+    if (!existing) {
+      const { buffer, contentType } = await synthesizeSpeech(text, voiceKey);
+      audioUrl = await saveToStorage(cacheKey, buffer, contentType);
+    }
+
+    const validated = NarrateResponseSchema.parse({ audioUrl });
     return NextResponse.json(validated);
   } catch (err: any) {
     return NextResponse.json(
