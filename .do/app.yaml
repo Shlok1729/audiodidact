@@ -10,9 +10,43 @@ services:
     http_port: 3000
     instance_count: 1
     instance_size_slug: basic-xxs
+    routes:
+      - path: /
     envs:
       - key: NODE_ENV
         value: "production"
       - key: USE_MOCKS
         value: "false"
+        type: SECRET
+      - key: GITHUB_TOKEN
+        type: SECRET
+      - key: GEMMA_API_KEY
+        type: SECRET
+      - key: GEMMA_MODEL
+        type: SECRET
+      - key: ELEVENLABS_API_KEY
+        type: SECRET
+      - key: ELEVENLABS_VOICE_NARRATOR
+        type: SECRET
+      - key: ELEVENLABS_VOICE_FRONTEND
+        type: SECRET
+      - key: ELEVENLABS_VOICE_BACKEND
+        type: SECRET
+      - key: ELEVENLABS_VOICE_DATA
+        type: SECRET
+      - key: GRADIENT_ACCESS_KEY
+        type: SECRET
+      - key: GRADIENT_AGENT_ENDPOINT
+        type: SECRET
+      - key: GRADIENT_KB_ID
+        type: SECRET
+      - key: SPACES_KEY
+        type: SECRET
+      - key: SPACES_SECRET
+        type: SECRET
+      - key: SPACES_ENDPOINT
+        type: SECRET
+      - key: SPACES_REGION
+        type: SECRET
+      - key: SPACES_BUCKET
         type: SECRET
