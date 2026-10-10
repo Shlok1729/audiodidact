@@ -90,9 +90,29 @@ export default function HomePage() {
                 setRepoUrl("https://github.com/audiodidact/demo");
                 router.push("/tour/audiodidact/demo");
               }}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 font-medium text-xs"
             >
-              🚀 audiodidact/demo (Architecture + ER Fixtures)
+              🚀 audiodidact/demo (Architecture + ER)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setRepoUrl("https://github.com/facebook/react");
+                router.push("/tour/facebook/react");
+              }}
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 font-medium text-xs"
+            >
+              ⚛️ facebook/react
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setRepoUrl("https://github.com/vercel/next.js");
+                router.push("/tour/vercel/next.js");
+              }}
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 font-medium text-xs"
+            >
+              ▲ vercel/next.js
             </button>
           </div>
         </div>

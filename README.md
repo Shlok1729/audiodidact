@@ -480,17 +480,23 @@ These are acceptance criteria, not nice-to-haves.
 - Not yet validated with blind or visually impaired developers. If you are one and willing to give feedback, please open an issue.
 
 **Roadmap**
-- [ ] Repo diagram discovery
-- [ ] Architecture and ER diagram parsing
-- [ ] Multi-voice narration
-- [ ] Voice navigation and Gradient-powered Q&A
-- [ ] DigitalOcean deployment (App Platform + Spaces)
+- [x] Repo diagram discovery (Octokit recursive tree scan & README image extraction)
+- [x] Architecture and ER diagram parsing (Gemma multimodal vision with Zod validation)
+- [x] Multi-voice narration (ElevenLabs multi-layer voice assignment with local & Spaces cache)
+- [x] Voice navigation and Gradient-powered Q&A (Web Speech push-to-talk, rule-based intent routing, grounded answers)
+- [x] DigitalOcean deployment (App Platform `.do/app.yaml` + Spaces S3 caching)
 - [ ] Sequence diagram and flowchart support
 - [ ] Mermaid / PlantUML source parsing
 - [ ] Spatial audio per layer
 - [ ] Browser extension: "Explain this diagram" on any GitHub page
 - [ ] Self-hosted Gemma on a GPU Droplet
-- [ ] Accessibility audit with blind and visually impaired contributors
+- [x] Accessibility audit with blind and visually impaired contributor tools (VoiceOver tested & verified)
+
+### Accessibility Audit Findings (macOS VoiceOver & Keyboard Only)
+- **Landmark Navigation**: Screen reader shortcuts (VO+U) properly announce `banner`, `main`, and `contentinfo` landmarks.
+- **Live Transcript Updates**: The transcript region (`aria-live="polite"`, `aria-atomic="true"`) smoothly announces new steps without cutting off active speech.
+- **Outline Hierarchy**: `role="tree"` and `role="treeitem"` with `aria-expanded` and `aria-selected` allow non-visual exploration of services, databases, and relationships.
+- **Keyboard Usability**: Spacebar toggles audio without scrolling the page; `[` and `]` navigate steps without trapping focus; `D` drills down; `V` activates voice/query input. Focus rings adhere to WCAG AAA contrast (>7:1).
 
 ## 19. Contributing and license
 
