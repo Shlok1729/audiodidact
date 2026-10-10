@@ -3,6 +3,7 @@ region: nyc
 services:
   - name: web
     github:
+      repo: Shlok1729/audiodidact
       branch: main
       deploy_on_push: true
     build_command: npm run build
