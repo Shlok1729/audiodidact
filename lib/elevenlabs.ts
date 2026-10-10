@@ -1,10 +1,10 @@
 import { VoiceKey } from "./schema";
 
 export const VOICE_MAP: Record<VoiceKey, string> = {
-  narrator: process.env.ELEVENLABS_VOICE_NARRATOR || "21m00Tcm4TlvDq8ikWAM", // Rachel
-  frontend: process.env.ELEVENLABS_VOICE_FRONTEND || "AZnzlk1XvdvUeBnXmlld", // Domi
-  backend: process.env.ELEVENLABS_VOICE_BACKEND || "ErXwobaYiN019PkySvjV",   // Antoni
-  data: process.env.ELEVENLABS_VOICE_DATA || "TxGEqnHWrfWFTfGW9XjX",         // Josh
+  narrator: process.env.ELEVENLABS_VOICE_NARRATOR || "Xb7hH8MSUJpSbSDYk0k2", // Alice (Clear, Engaging Educator - Female)
+  frontend: process.env.ELEVENLABS_VOICE_FRONTEND || "EXAVITQu4vr4xnSDxMaL", // Sarah (Mature, Reassuring, Confident - Female)
+  backend: process.env.ELEVENLABS_VOICE_BACKEND || "FGY2WhTYpPnrIDTdsKH5",   // Laura (Enthusiast, Quirky - Female)
+  data: process.env.ELEVENLABS_VOICE_DATA || "XrExE9yKIg1WjnnlVkGX",         // Matilda (Professional - Female)
 };
 
 /**

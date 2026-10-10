@@ -3,25 +3,14 @@
 @tailwind utilities;
 
 :root {
-  --background: #0b0f19;
-  --foreground: #f3f4f6;
-  --primary: #3b82f6;
+  --background: #060812;
+  --foreground: #f8fafc;
+  --primary: #8b5cf6;
   --primary-foreground: #ffffff;
-  --card: #111827;
-  --card-foreground: #f9fafb;
-  --border: #1f2937;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    --background: #f9fafb;
-    --foreground: #111827;
-    --primary: #2563eb;
-    --primary-foreground: #ffffff;
-    --card: #ffffff;
-    --card-foreground: #111827;
-    --border: #e5e7eb;
-  }
+  --accent: #06b6d4;
+  --card: #0d111e;
+  --card-foreground: #f8fafc;
+  --border: #1e263c;
 }
 
 body {
@@ -29,12 +18,36 @@ body {
   background: var(--background);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   min-height: 100vh;
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(139, 92, 246, 0.15), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 85% 15%, rgba(6, 182, 212, 0.1), transparent 60%);
+  background-attachment: fixed;
 }
 
-/* Ensure focus states are clearly visible for keyboard navigation (WCAG AA requirement) */
+/* Custom Cyber Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #090c17;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #252e48;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #06b6d4;
+}
+
+/* Ensure focus states are clearly visible with vibrant cyber cyan (WCAG AA) */
 :focus-visible {
-  outline: 3px solid #60a5fa !important;
+  outline: 3px solid #22d3ee !important;
   outline-offset: 2px !important;
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.5) !important;
 }
 
 /* Respect user's motion preferences */

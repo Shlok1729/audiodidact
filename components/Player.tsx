@@ -41,6 +41,33 @@ export default function Player({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
+  // Helper to speak with browser female voice if audio fails
+  const speakWithBrowserTTS = useCallback((text: string) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.rate = playbackSpeed;
+    const voices = window.speechSynthesis.getVoices();
+    const femaleVoice = voices.find(
+      (v) =>
+        v.name.toLowerCase().includes("female") ||
+        v.name.toLowerCase().includes("samantha") ||
+        v.name.toLowerCase().includes("victoria") ||
+        v.name.toLowerCase().includes("karen") ||
+        v.name.toLowerCase().includes("zira") ||
+        v.name.toLowerCase().includes("natural")
+    );
+    if (femaleVoice) utt.voice = femaleVoice;
+    utt.onend = () => {
+      if (currentStepIndex < steps.length - 1) {
+        onNext();
+      } else {
+        onPlayPause();
+      }
+    };
+    window.speechSynthesis.speak(utt);
+  }, [playbackSpeed, currentStepIndex, steps.length, onNext, onPlayPause]);
+
   // Synchronize audio playback with isPlaying and currentStep
   useEffect(() => {
     const audio = audioRef.current;
@@ -52,14 +79,19 @@ export default function Player({
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch(() => {
-          // Fallback or user gesture requirement handled
           setAudioError(true);
+          if (currentStep?.text) {
+            speakWithBrowserTTS(currentStep.text);
+          }
         });
       }
     } else {
       audio.pause();
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
     }
-  }, [isPlaying, currentStep, playbackSpeed]);
+  }, [isPlaying, currentStep, playbackSpeed, speakWithBrowserTTS]);
 
   // When step changes, reset time and continue playback if isPlaying
   useEffect(() => {
@@ -69,10 +101,14 @@ export default function Player({
       setCurrentTime(0);
       setAudioError(false);
       if (isPlaying) {
-        audio.play().catch(() => {});
+        audio.play().catch(() => {
+          if (currentStep?.text) {
+            speakWithBrowserTTS(currentStep.text);
+          }
+        });
       }
     }
-  }, [currentStepIndex, isPlaying]);
+  }, [currentStepIndex, isPlaying, currentStep, speakWithBrowserTTS]);
 
   // Update playback speed dynamically
   useEffect(() => {
@@ -141,28 +177,31 @@ export default function Player({
     );
   }
 
-  // Voice badge colors
+  // Voice badge colors (Electric Violet & Cyber Cyan palette)
   const voiceBadgeStyles: Record<string, string> = {
-    narrator: "bg-purple-950/80 text-purple-300 border-purple-800",
-    frontend: "bg-sky-950/80 text-sky-300 border-sky-800",
-    backend: "bg-emerald-950/80 text-emerald-300 border-emerald-800",
-    data: "bg-amber-950/80 text-amber-300 border-amber-800",
+    narrator: "bg-violet-950/90 text-violet-300 border-violet-700/80 shadow-sm shadow-violet-900/20",
+    frontend: "bg-cyan-950/90 text-cyan-300 border-cyan-700/80 shadow-sm shadow-cyan-900/20",
+    backend: "bg-purple-950/90 text-purple-300 border-purple-700/80 shadow-sm shadow-purple-900/20",
+    data: "bg-fuchsia-950/90 text-fuchsia-300 border-fuchsia-700/80 shadow-sm shadow-fuchsia-900/20",
   };
 
   const layerBadgeStyles: Record<string, string> = {
-    frontend: "bg-blue-900/40 text-blue-300 border-blue-700",
-    backend: "bg-emerald-900/40 text-emerald-300 border-emerald-700",
-    data: "bg-amber-900/40 text-amber-300 border-amber-700",
-    infra: "bg-orange-900/40 text-orange-300 border-orange-700",
-    external: "bg-rose-900/40 text-rose-300 border-rose-700",
-    other: "bg-slate-800 text-slate-300 border-slate-700",
+    frontend: "bg-cyan-950/60 text-cyan-300 border-cyan-800/80",
+    backend: "bg-violet-950/60 text-violet-300 border-violet-800/80",
+    data: "bg-fuchsia-950/60 text-fuchsia-300 border-fuchsia-800/80",
+    infra: "bg-indigo-950/60 text-indigo-300 border-indigo-800/80",
+    external: "bg-rose-950/60 text-rose-300 border-rose-800/80",
+    other: "bg-slate-900 text-slate-300 border-slate-800",
   };
 
   return (
     <section
       aria-label="Tour Audio and Step Player"
-      className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl"
+      className="bg-[#0c101d]/90 backdrop-blur-2xl border border-violet-900/50 rounded-2xl p-5 shadow-2xl shadow-violet-950/40 relative overflow-hidden"
     >
+      <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full blur-2xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-32 h-32 bg-violet-500/10 rounded-full blur-2xl pointer-events-none" />
+
       {/* Hidden audio element wired to current step's audioUrl */}
       {currentStep.audioUrl && (
         <audio
@@ -178,9 +217,9 @@ export default function Player({
       )}
 
       {/* Header with Diagram title, Step counter, and Badges */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-4 mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-violet-950/80 pb-4 mb-4 relative z-10">
         <div>
-          <span className="text-xs font-semibold tracking-wider uppercase text-blue-400 block mb-1">
+          <span className="text-xs font-bold tracking-wider uppercase text-cyan-400 block mb-1">
             {currentDiagram?.type.toUpperCase()} DIAGRAM
           </span>
           <h2 className="text-lg font-bold text-white tracking-tight">
@@ -200,12 +239,12 @@ export default function Player({
 
           {/* Voice Key Badge */}
           <span
-            className={`text-xs font-medium px-2.5 py-1 rounded-full border flex items-center space-x-1.5 ${
+            className={`text-xs font-semibold px-2.5 py-1 rounded-full border flex items-center space-x-1.5 ${
               voiceBadgeStyles[currentStep.voiceKey] || voiceBadgeStyles.narrator
             }`}
           >
             {isPlaying && (
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping inline-block" />
             )}
             <span>Voice: {currentStep.voiceKey}</span>
           </span>
@@ -213,18 +252,18 @@ export default function Player({
       </div>
 
       {/* Progress Bar & Indicators */}
-      <div className="space-y-1.5 mb-5">
+      <div className="space-y-1.5 mb-5 relative z-10">
         <div className="flex justify-between text-xs text-slate-400">
-          <span>
+          <span className="font-medium text-slate-300">
             Step {currentStepIndex + 1} of {steps.length}
           </span>
           <div className="flex items-center space-x-2">
             {duration > 0 && (
-              <span className="font-mono text-slate-300">
+              <span className="font-mono text-cyan-400 font-semibold">
                 {Math.floor(currentTime)}s / {Math.floor(duration)}s
               </span>
             )}
-            <span>
+            <span className="text-slate-400">
               {Math.round(((currentStepIndex + 1) / steps.length) * 100)}% Complete
             </span>
           </div>
@@ -235,10 +274,10 @@ export default function Player({
           aria-valuemin={1}
           aria-valuemax={steps.length}
           aria-label="Tour progress"
-          className="w-full bg-slate-800 rounded-full h-2 overflow-hidden"
+          className="w-full bg-[#060814] rounded-full h-2 overflow-hidden border border-violet-950"
         >
           <div
-            className="bg-blue-500 h-2 rounded-full transition-all duration-300 ease-out"
+            className="bg-gradient-to-r from-violet-500 via-purple-500 to-cyan-400 h-2 rounded-full transition-all duration-300 ease-out shadow-sm shadow-cyan-400/50"
             style={{ width: `${((currentStepIndex + 1) / steps.length) * 100}%` }}
           />
         </div>
@@ -253,18 +292,28 @@ export default function Player({
             onClick={onPrevious}
             disabled={currentStepIndex === 0}
             aria-label="Previous step (Shortcut: Left Arrow or [)"
-            className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-slate-200 font-medium text-sm transition-colors border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800/80 text-slate-200 font-medium text-xs transition-colors border border-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-400"
           >
-            ← Previous
+            ← Prev
           </button>
 
           <button
             type="button"
             onClick={onPlayPause}
             aria-label={isPlaying ? "Pause tour audio (Shortcut: Space)" : "Play tour audio (Shortcut: Space)"}
-            className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-colors shadow-md shadow-blue-900/30 focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center space-x-2"
+            className="px-6 py-2 rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-cyan-500 hover:from-violet-500 hover:to-cyan-400 text-white font-bold text-xs transition-all shadow-lg shadow-violet-600/30 focus:outline-none focus:ring-2 focus:ring-cyan-400 flex items-center space-x-2"
           >
-            <span>{isPlaying ? "⏸ Pause" : "▶ Play Audio"}</span>
+            {isPlaying ? (
+              <>
+                <span className="w-2 h-2 rounded-sm bg-white" />
+                <span>Pause</span>
+              </>
+            ) : (
+              <>
+                <span className="text-sm">▶</span>
+                <span>Play Tour</span>
+              </>
+            )}
           </button>
 
           <button
@@ -272,7 +321,7 @@ export default function Player({
             onClick={onNext}
             disabled={currentStepIndex === steps.length - 1}
             aria-label="Next step (Shortcut: Right Arrow or ])"
-            className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-slate-200 font-medium text-sm transition-colors border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800/80 text-slate-200 font-medium text-xs transition-colors border border-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-400"
           >
             Next →
           </button>
@@ -283,30 +332,31 @@ export default function Player({
               type="button"
               onClick={onDrillDown}
               aria-label="Drill down into connected components (Shortcut: D)"
-              className="px-3.5 py-2 rounded-lg bg-indigo-900/70 hover:bg-indigo-800/80 text-indigo-200 font-medium text-sm transition-colors border border-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="px-3 py-2 rounded-xl bg-violet-950/80 hover:bg-violet-900 text-violet-300 font-medium text-xs transition-colors border border-violet-700/80 focus:outline-none focus:ring-2 focus:ring-violet-400"
             >
               🔍 Drill Down (D)
             </button>
           )}
         </div>
 
-        {/* Speed Controls */}
-        <div className="flex items-center space-x-2 text-xs">
-          <label htmlFor="playback-speed-select" className="text-slate-400 font-medium">
-            Speed:
-          </label>
-          <select
-            id="playback-speed-select"
-            value={playbackSpeed}
-            onChange={(e) => onSpeedChange(parseFloat(e.target.value))}
-            className="bg-slate-800 text-slate-200 border border-slate-700 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
-          >
-            <option value="0.75">0.75x</option>
-            <option value="1">1.0x</option>
-            <option value="1.25">1.25x</option>
-            <option value="1.5">1.5x</option>
-            <option value="2">2.0x</option>
-          </select>
+        {/* Modern Segmented Speed Pills */}
+        <div className="flex items-center space-x-1.5 text-xs bg-slate-950/70 p-1 rounded-xl border border-slate-800">
+          <span className="text-slate-500 font-medium px-1.5 text-[11px]">Speed</span>
+          {[0.75, 1, 1.25, 1.5, 2].map((spd) => (
+            <button
+              key={spd}
+              type="button"
+              onClick={() => onSpeedChange(spd)}
+              aria-label={`Set speed to ${spd}x`}
+              className={`px-2 py-0.5 rounded-lg font-mono text-[11px] font-semibold transition-colors ${
+                playbackSpeed === spd
+                  ? "bg-gradient-to-r from-violet-600 to-cyan-600 text-white shadow-sm shadow-violet-900/30"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              {spd}x
+            </button>
+          ))}
         </div>
       </div>
 

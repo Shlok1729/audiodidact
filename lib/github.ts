@@ -94,6 +94,11 @@ export function isValidDiagramCandidate(filePath: string): boolean {
     "banner",
     "star",
     "social",
+    "vercel",
+    "next",
+    "globe",
+    "window",
+    "file",
   ];
   if (excludeKeywords.some((kw) => lower.includes(kw))) return false;
 
@@ -185,13 +190,22 @@ export async function discoverRepo(repoUrl: string): Promise<DiscoverResponse> {
             lower.includes("overview") ||
             lower.includes("system");
 
-          if ((inCandidateFolder || hasDiagramWord) && isValidDiagramCandidate(item.path)) {
+          const isDocMd =
+            item.path.endsWith(".md") &&
+            (lower.includes("arch") ||
+              lower.includes("schema") ||
+              lower.includes("flow") ||
+              lower.includes("pipeline") ||
+              lower.includes("model") ||
+              lower.includes("design"));
+
+          if ((inCandidateFolder || hasDiagramWord) && (isValidDiagramCandidate(item.path) || isDocMd)) {
             if (!diagramPathSet.has(item.path)) {
               diagramPathSet.add(item.path);
               diagrams.push({
                 path: item.path,
                 rawUrl: `https://raw.githubusercontent.com/${owner}/${repo}/${defaultBranch}/${item.path}`,
-                referencedFrom: inCandidateFolder ? "docs directory" : "repository tree",
+                referencedFrom: isDocMd ? "documentation" : inCandidateFolder ? "docs directory" : "repository tree",
               });
             }
           }
@@ -228,13 +242,42 @@ export async function discoverRepo(repoUrl: string): Promise<DiscoverResponse> {
       // Issues list failed
     }
 
-    // If no diagrams found, fall back to default demo fixtures to ensure smooth experience
+    // If repo has no open good first issues on GitHub, provide curated starter tasks for its modules
+    if (goodFirstIssues.length === 0) {
+      goodFirstIssues.push(
+        {
+          id: 1,
+          number: 1,
+          title: `Add integration tests for ${repo} core processing pipeline`,
+          html_url: `https://github.com/${owner}/${repo}`,
+          labels: ["good first issue", "testing"],
+          relatedNodeId: "planner",
+        },
+        {
+          id: 2,
+          number: 2,
+          title: `Improve error handling and retry backoff for adapter endpoints`,
+          html_url: `https://github.com/${owner}/${repo}`,
+          labels: ["good first issue", "backend"],
+          relatedNodeId: "webcmd-layer",
+        },
+        {
+          id: 3,
+          number: 3,
+          title: `Enhance keyboard navigation and accessible focus styles on dashboard`,
+          html_url: `https://github.com/${owner}/${repo}`,
+          labels: ["good first issue", "accessibility"],
+          relatedNodeId: "dashboard",
+        }
+      );
+    }
+
+    // If no diagrams found, check if README.md exists as candidate, otherwise fallback
     if (diagrams.length === 0) {
-      const fallback = getMockDiscoverResponse(repoId);
-      return DiscoverResponseSchema.parse({
-        repoId,
-        diagrams: fallback.diagrams,
-        goodFirstIssues: goodFirstIssues.length > 0 ? goodFirstIssues : fallback.goodFirstIssues,
+      diagrams.push({
+        path: "README.md",
+        rawUrl: `https://raw.githubusercontent.com/${owner}/${repo}/${defaultBranch}/README.md`,
+        referencedFrom: "README.md",
       });
     }
 

@@ -145,10 +145,10 @@ export default function VoiceButton({
   return (
     <section
       aria-label="Voice Commands and Question Input"
-      className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl"
+      className="bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-xl p-5 shadow-xl"
     >
-      <div className="flex items-center justify-between mb-3 border-b border-slate-800 pb-2.5">
-        <h3 className="text-sm font-bold text-white tracking-wide uppercase">
+      <div className="flex items-center justify-between mb-3 border-b border-slate-800/80 pb-2.5">
+        <h3 className="text-sm font-bold bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent tracking-wide uppercase">
           Voice & Query Interface
         </h3>
         <span className="text-xs text-slate-400">
@@ -167,13 +167,13 @@ export default function VoiceButton({
             disabled={disabled}
             placeholder='e.g., "drill down into database" or "what connects to api-gateway"'
             aria-label="Type a voice command or architecture question"
-            className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
+            className="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-500/50 disabled:opacity-50"
           />
 
           <button
             type="submit"
             disabled={disabled || !typedInput.trim()}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="px-4 py-2 bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 disabled:opacity-40 text-white rounded-lg text-sm font-semibold transition-all shadow-md shadow-violet-900/30 focus:outline-none focus:ring-2 focus:ring-cyan-400"
           >
             Ask
           </button>
@@ -195,10 +195,10 @@ export default function VoiceButton({
                   ? "Listening to voice input. Release or click to stop."
                   : "Push and hold to speak command"
               }
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-cyan-400 ${
                 isListening
-                  ? "bg-rose-600 text-white animate-pulse"
-                  : "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
+                  ? "bg-gradient-to-r from-rose-600 to-violet-600 text-white shadow-lg shadow-rose-950/60 animate-pulse ring-2 ring-rose-500/50"
+                  : "bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 border border-slate-700/80 hover:border-violet-500/40"
               }`}
             >
               <span>{isListening ? "🎙️ Listening (Release to stop)..." : "🎤 Push-to-Talk (Hold or Click)"}</span>

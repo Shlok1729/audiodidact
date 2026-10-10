@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { NarrateRequestSchema, NarrateResponseSchema } from "@/lib/schema";
-import { synthesizeSpeech } from "@/lib/elevenlabs";
+import { synthesizeSpeech, VOICE_MAP } from "@/lib/elevenlabs";
 import { saveToStorage, getFromStorage } from "@/lib/storage";
 import { sha256 } from "@/lib/hash";
 
@@ -18,7 +18,8 @@ export async function POST(req: NextRequest) {
     const { text, voiceKey } = parsed.data;
     const isMock = process.env.USE_MOCKS === "true" || !process.env.ELEVENLABS_API_KEY;
     const ext = isMock ? "wav" : "mp3";
-    const cacheKey = `${sha256(`${voiceKey}:${text}`)}.${ext}`;
+    const voiceId = VOICE_MAP[voiceKey] || VOICE_MAP.narrator;
+    const cacheKey = `${sha256(`${voiceId}:${text}`)}.${ext}`;
 
     // Check if audio is already cached
     const existing = await getFromStorage(cacheKey);

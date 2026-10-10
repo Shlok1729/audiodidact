@@ -108,12 +108,17 @@ export function planTour(repoId: string, diagrams: DiagramGraph[]): Tour {
 
       let script = "";
       if (node.details?.columns && node.details.columns.length > 0) {
-        const colNames = node.details.columns.map((c) => c.name).join(", ");
+        const cols = node.details.columns;
+        const keyCols = cols.slice(0, 4).map((c) => c.name);
+        const colSummary =
+          cols.length > 4
+            ? `Key fields include ${keyCols.join(", ")}, plus ${cols.length - 4} additional attributes.`
+            : `Fields include ${keyCols.join(", ")}.`;
         const relations =
           outboundLabels.length > 0
             ? ` It relates to ${outboundLabels.join(", ")}.`
             : "";
-        script = `${node.label}, a ${node.kind} in the ${groupLabel}. Columns include ${colNames}.${relations}`;
+        script = `${node.label}, a ${node.kind} in the ${groupLabel}. ${colSummary}${relations}`;
       } else {
         const outboundPart =
           outboundLabels.length > 0

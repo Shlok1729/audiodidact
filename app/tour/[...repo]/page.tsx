@@ -254,14 +254,25 @@ export default function TourPage({ params }: PageProps) {
             repoId: repoSlug,
             question: utterance,
             currentStepId: currentStep?.id,
+            diagrams: tour?.diagrams,
           }),
         });
 
         if (askRes.ok) {
-          const answer: AgentAnswer = await askRes.json();
+          const answer: AskResponse = await askRes.json();
           setAgentAnswer(answer);
           setHighlightedNodeIds(answer.referencedNodeIds || []);
           setStatusMessage(answer.text);
+
+          // If spoken audio is returned for the answer, play it aloud
+          if (answer.audioUrl) {
+            try {
+              const ansAudio = new Audio(answer.audioUrl);
+              ansAudio.play().catch(() => {});
+            } catch {
+              // Non-blocking
+            }
+          }
         }
       } catch (err) {
         setStatusMessage("Error processing query. Try again.");
@@ -302,21 +313,21 @@ export default function TourPage({ params }: PageProps) {
           <nav aria-label="Breadcrumb" className="text-xs text-slate-400 mb-1">
             <Link
               href="/"
-              className="hover:text-white underline focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
+              className="hover:text-cyan-400 underline focus:outline-none focus:ring-1 focus:ring-cyan-400 rounded transition-colors"
             >
               Repositories
             </Link>{" "}
-            / <span className="text-slate-200">{repoSlug}</span>
+            / <span className="text-cyan-300 font-mono">{repoSlug}</span>
           </nav>
           <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-            Repository Tour: {repoSlug}
+            Repository Tour: <span className="bg-gradient-to-r from-violet-400 via-purple-300 to-cyan-400 bg-clip-text text-transparent">{repoSlug}</span>
           </h1>
         </div>
 
         <div className="flex items-center space-x-2">
           <Link
             href="/"
-            className="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="text-xs px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-400"
           >
             ← Change Repository
           </Link>
@@ -345,14 +356,14 @@ export default function TourPage({ params }: PageProps) {
           aria-label="Agent Answer to Question"
           className={`mb-6 p-4 rounded-xl border shadow-lg transition-all ${
             agentAnswer.grounded
-              ? "bg-blue-950/70 border-blue-600 text-blue-100"
+              ? "bg-violet-950/70 border-cyan-500/80 text-cyan-100 ring-1 ring-cyan-500/30 shadow-violet-950/50"
               : "bg-amber-950/70 border-amber-600 text-amber-100"
           }`}
         >
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="flex items-center space-x-2 mb-1">
-                <span className="text-xs font-bold uppercase tracking-wider">
+                <span className="text-xs font-bold uppercase tracking-wider text-cyan-300">
                   {agentAnswer.grounded ? "✓ Grounded Diagram Answer" : "⚠️ Honest Fallback"}
                 </span>
                 <span className="text-xs opacity-75">
@@ -379,10 +390,10 @@ export default function TourPage({ params }: PageProps) {
         </aside>
       )}
 
-      {/* Main Tour Grid: Left (Player, Transcript, Voice, Issues) | Right (Outline) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column (7 cols): Playback & Interaction */}
-        <div className="lg:col-span-7 space-y-6">
+      {/* Main Tour Grid: Left (Player, Transcript, Voice) | Right (Sticky System Outline) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8 items-start">
+        {/* Left Column (7 cols): Studio Player, Live Transcript, & Voice Assistant */}
+        <div className="lg:col-span-7 space-y-5">
           <Player
             tourId={tour.repoId}
             steps={tour.steps}
@@ -406,25 +417,26 @@ export default function TourPage({ params }: PageProps) {
           />
 
           <VoiceButton onUtterance={handleUtterance} />
+        </div>
 
-          <IssueList
-            issues={issues}
+        {/* Right Column (5 cols): Modern Interactive System Outline */}
+        <div className="lg:col-span-5 lg:sticky lg:top-20">
+          <Outline
+            diagrams={tour.diagrams}
+            activeDiagramId={currentStep.diagramId}
             activeNodeId={currentStep.nodeId}
+            highlightedNodeIds={highlightedNodeIds}
+            onSelectNode={handleSelectNode}
           />
         </div>
+      </div>
 
-        {/* Right Column (5 cols): Accessible Tree Outline */}
-        <div className="lg:col-span-5">
-          <div className="sticky top-20">
-            <Outline
-              diagrams={tour.diagrams}
-              activeDiagramId={currentStep.diagramId}
-              activeNodeId={currentStep.nodeId}
-              highlightedNodeIds={highlightedNodeIds}
-              onSelectNode={handleSelectNode}
-            />
-          </div>
-        </div>
+      {/* Full-width Bottom Section: Good First Issues in Modern Grid */}
+      <div className="mt-8">
+        <IssueList
+          issues={issues}
+          activeNodeId={currentStep.nodeId}
+        />
       </div>
     </div>
   );

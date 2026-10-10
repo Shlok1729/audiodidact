@@ -15,11 +15,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-slate-950 text-slate-100 flex flex-col min-h-screen">
+      <body className="bg-[#060812] text-slate-100 flex flex-col min-h-screen selection:bg-violet-600 selection:text-white">
         {/* Skip to main content for screen readers and keyboard users */}
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-md focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-violet-600 focus:text-white focus:rounded-md focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-cyan-400"
         >
           Skip to main content
         </a>
@@ -27,7 +27,7 @@ export default function RootLayout({
         {/* Global Navigation Header */}
         <header
           role="banner"
-          className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40"
+          className="border-b border-violet-950/60 bg-[#070914]/80 backdrop-blur-xl sticky top-0 z-40"
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -36,12 +36,13 @@ export default function RootLayout({
               </span>
               <Link
                 href="/"
-                className="text-xl font-bold tracking-tight text-white hover:text-blue-400 transition-colors focus:ring-2 focus:ring-blue-400 focus:outline-none rounded px-1"
+                className="text-xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-violet-300 via-fuchsia-300 to-cyan-300 hover:opacity-90 transition-opacity focus:ring-2 focus:ring-cyan-400 focus:outline-none rounded px-1"
               >
                 Audiodidact
               </Link>
-              <span className="text-xs bg-blue-900/60 text-blue-300 font-medium px-2 py-0.5 rounded border border-blue-700/50">
-                Phase 1 Mock Tour
+              <span className="text-xs bg-violet-950/80 text-violet-300 font-medium px-2.5 py-0.5 rounded-full border border-violet-800/60 flex items-center space-x-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block animate-pulse" />
+                <span>AI Studio Voice Tour</span>
               </span>
             </div>
 
@@ -50,7 +51,7 @@ export default function RootLayout({
                 <li>
                   <Link
                     href="/"
-                    className="text-slate-300 hover:text-white px-3 py-1.5 rounded transition-colors focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                    className="text-slate-300 hover:text-cyan-300 px-3 py-1.5 rounded transition-colors focus:ring-2 focus:ring-cyan-400 focus:outline-none"
                   >
                     Home
                   </Link>
@@ -58,9 +59,9 @@ export default function RootLayout({
                 <li>
                   <Link
                     href="/tour/audiodidact/demo"
-                    className="bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-1.5 rounded-md transition-colors focus:ring-2 focus:ring-blue-400 focus:outline-none font-semibold"
+                    className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 text-white px-4 py-2 rounded-xl transition-all shadow-lg shadow-violet-600/25 focus:ring-2 focus:ring-cyan-400 focus:outline-none font-semibold text-xs sm:text-sm"
                   >
-                    Start Tour
+                    Start Demo Tour
                   </Link>
                 </li>
               </ul>
@@ -76,14 +77,14 @@ export default function RootLayout({
         {/* Accessible Footer */}
         <footer
           role="contentinfo"
-          className="border-t border-slate-800 bg-slate-950 py-6 text-center text-xs text-slate-400"
+          className="border-t border-violet-950/60 bg-[#060812] py-8 text-center text-xs text-slate-400"
         >
-          <div className="max-w-7xl mx-auto px-4">
-            <p>
+          <div className="max-w-7xl mx-auto px-4 space-y-2">
+            <p className="text-slate-300 font-medium">
               Audiodidact is an accessible onboarding assistant for blind and visually impaired developers.
             </p>
-            <p className="mt-1 text-slate-500">
-              Built with Next.js, TypeScript, Tailwind CSS, and Zod.
+            <p className="text-slate-500 text-[11px]">
+              Engineered with Electric Violet & Cyber Cyan Audio Architecture • Powered by ElevenLabs Multi-Voice Narration.
             </p>
           </div>
         </footer>
